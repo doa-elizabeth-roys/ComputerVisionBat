@@ -27,6 +27,8 @@ from ultralytics.nn.modules import (
     A2C2f,
     AConv,
     ADown,
+    APBottleneck,
+    APC2f,
     Bottleneck,
     BottleneckCSP,
     C2f,
@@ -54,6 +56,7 @@ from ultralytics.nn.modules import (
     ImagePoolingAttn,
     Index,
     LRPCHead,
+    PConv,
     Pose,
     RepC3,
     RepConv,
@@ -68,10 +71,6 @@ from ultralytics.nn.modules import (
     YOLOEDetect,
     YOLOESegment,
     v10Detect,
-    APC2f, 
-    APBottleneck, 
-    PConv, 
-
 )
 from ultralytics.nn.modules.APConv import PConv
 from ultralytics.utils import DEFAULT_CFG_DICT, LOGGER, YAML, colorstr, emojis
@@ -83,8 +82,8 @@ from ultralytics.utils.loss import (
     v8OBBLoss,
     v8PoseLoss,
     v8SegmentationLoss,
-    AdaptiveThresholdFocalLoss,
 )
+
 # from ultralytics.utils.SDloss import (
 #     BboxLoss,
 #     SLSIoULoss,
@@ -511,7 +510,7 @@ class DetectionModel(BaseModel):
         return E2EDetectLoss(self) if getattr(self, "end2end", False) else v8DetectionLoss(self)
 
     # def init_criterion(self):
-    #     reg_max = 16  
+    #     reg_max = 16
     #     use_dfl = True
     #     return BboxLoss(reg_max=reg_max, use_dfl=use_dfl)
 
@@ -1611,9 +1610,9 @@ def parse_model(d, ch, verbose=True):
             SCDown,
             C2fCIB,
             A2C2f,
-            PConv, 
-            APC2f, 
-            APBottleneck
+            PConv,
+            APC2f,
+            APBottleneck,
         }
     )
     repeat_modules = frozenset(  # modules with 'repeat' arguments
@@ -1633,7 +1632,6 @@ def parse_model(d, ch, verbose=True):
             C2fCIB,
             C2PSA,
             A2C2f,
-            
         }
     )
     for i, (f, n, m, args) in enumerate(d["backbone"] + d["head"]):  # from, number, module, args
@@ -1643,7 +1641,7 @@ def parse_model(d, ch, verbose=True):
             else getattr(__import__("torchvision").ops, m[16:])
             if "torchvision.ops." in m
             else globals()[m]
-        ) 
+        )
         for j, a in enumerate(args):
             if isinstance(a, str):
                 with contextlib.suppress(ValueError):
