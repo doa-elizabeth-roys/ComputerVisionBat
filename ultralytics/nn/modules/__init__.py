@@ -17,6 +17,11 @@ Examples:
     >>> subprocess.run(f"onnxslim {f} {f} && open {f}", shell=True, check=True)  # pip install onnxslim
 """
 
+from .APConv import (
+    APBottleneck,
+    APC2f,
+    PConv,
+)
 from .block import (
     C1,
     C2,
@@ -100,12 +105,6 @@ from .transformer import (
     TransformerBlock,
     TransformerEncoderLayer,
     TransformerLayer,
-)
-
-from .APConv import (
-    PConv, 
-    APC2f, 
-    APBottleneck,
 )
 
 __all__ = (
