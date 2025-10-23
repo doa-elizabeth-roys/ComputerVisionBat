@@ -4,10 +4,10 @@ import torch.nn as nn
 # Simulate predictions (logits) and ground-truth labels
 torch.manual_seed(0)
 pred = torch.randn((4, 1), requires_grad=True)  # raw logits
-true = torch.randint(0, 2, (4, 1)).float()       # binary targets
+true = torch.randint(0, 2, (4, 1)).float()  # binary targets
 
 # BCE loss function
-loss_fcn = nn.BCEWithLogitsLoss(reduction='none')
+loss_fcn = nn.BCEWithLogitsLoss(reduction="none")
 
 # Step 1: Compute basic BCE loss
 loss = loss_fcn(pred, true)
@@ -27,8 +27,8 @@ p_t_new = 0.05 * p_t_old + 0.95 * mean_pt
 gamma = -torch.log(p_t_new)
 
 # Step 6: Modulate loss
-p_t_high = torch.where(p_t > 0.5, (1.000001 - p_t)**gamma, torch.zeros_like(p_t))
-p_t_low = torch.where(p_t <= 0.5, (1.5 - p_t)**(-torch.log(p_t)), torch.zeros_like(p_t))
+p_t_high = torch.where(p_t > 0.5, (1.000001 - p_t) ** gamma, torch.zeros_like(p_t))
+p_t_low = torch.where(p_t <= 0.5, (1.5 - p_t) ** (-torch.log(p_t)), torch.zeros_like(p_t))
 modulating_factor = p_t_high + p_t_low
 
 # Step 7: Apply modulation
@@ -47,13 +47,12 @@ print("Adjusted loss:", adjusted_loss.view(-1).detach().numpy())
 
 from ultralytics.utils.loss import AdaptiveThresholdFocalLoss
 
-
 # Create dummy predictions and targets
 pred = torch.randn(5, requires_grad=True)
 target = torch.randint(0, 2, (5,), dtype=torch.float32)
 
 # Instantiate your loss
-loss_fn = AdaptiveThresholdFocalLoss(torch.nn.BCEWithLogitsLoss(reduction='none'))
+loss_fn = AdaptiveThresholdFocalLoss(torch.nn.BCEWithLogitsLoss(reduction="none"))
 
 # Calculate loss
 loss = loss_fn(pred, target)
@@ -62,16 +61,17 @@ print("Loss:", loss.mean().item())
 if torch.rand(1).item() < 0.01:  # print occasionally
     print(f"mean_pt: {mean_pt.item():.4f}, p_t_old: {self.p_t_old.item():.4f}, gamma: {gamma.item():.4f}")
 
-from ultralytics.utils.loss import AdaptiveThresholdFocalLoss
 import torch
 import torch.nn as nn
+
+from ultralytics.utils.loss import AdaptiveThresholdFocalLoss
 
 # Create dummy predictions and targets
 pred = torch.randn(5, requires_grad=True)
 target = torch.randint(0, 2, (5,), dtype=torch.float32)
 
 # Instantiate your loss
-loss_fn = AdaptiveThresholdFocalLoss(nn.BCEWithLogitsLoss(reduction='none'))
+loss_fn = AdaptiveThresholdFocalLoss(nn.BCEWithLogitsLoss(reduction="none"))
 
 # Calculate loss
 loss = loss_fn(pred, target)
