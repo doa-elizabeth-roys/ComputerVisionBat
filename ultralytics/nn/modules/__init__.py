@@ -102,6 +102,12 @@ from .transformer import (
     TransformerLayer,
 )
 
+from .APConv import (
+    PConv, 
+    APC2f, 
+    APBottleneck,
+)
+
 __all__ = (
     "Conv",
     "Conv2",
