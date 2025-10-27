@@ -2,9 +2,8 @@ train: /content/drive/MyDrive/ComputerVisionBat/BatDetection.yolov8/train/images
 val: /content/drive/MyDrive/ComputerVisionBat/BatDetection.yolov8/valid/images
 test: /content/drive/MyDrive/ComputerVisionBat/BatDetection.yolov8/test/images
 
-
 nc: 1
-names: ['bat']
+names: ["bat"]
 
 roboflow:
   workspace: bat-svxlc

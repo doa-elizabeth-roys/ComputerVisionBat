@@ -2,7 +2,6 @@
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 
 from ultralytics.nn.modules.block import Bottleneck
 
@@ -37,9 +36,9 @@ class Conv(nn.Module):
         return self.act(self.conv(x))
 
 
-class PConv(nn.Module):  
-    ''' Pinwheel-shaped Convolution using the Asymmetric Padding method. '''
-    
+class PConv(nn.Module):
+    """Pinwheel-shaped Convolution using the Asymmetric Padding method."""
+
     def __init__(self, c1, c2, k, s):
         super().__init__()
 
@@ -70,7 +69,9 @@ class APC2f(nn.Module):
         self.cv1 = Conv(c1, 2 * self.c, 1, 1)
         self.cv2 = Conv((2 + n) * self.c, c2, 1)  # optional act=FReLU(c2)
         if P:
-            self.m = nn.ModuleList(APBottleneck(self.c, self.c, shortcut, g, k=((3, 3), (3, 3)), e=1.0) for _ in range(n))
+            self.m = nn.ModuleList(
+                APBottleneck(self.c, self.c, shortcut, g, k=((3, 3), (3, 3)), e=1.0) for _ in range(n)
+            )
         else:
             self.m = nn.ModuleList(Bottleneck(self.c, self.c, shortcut, g, k=((3, 3), (3, 3)), e=1.0) for _ in range(n))
 
@@ -96,7 +97,7 @@ class APBottleneck(nn.Module):
         """
         super().__init__()
         c_ = int(c2 * e)  # hidden channels
-        p = [(2,0,2,0),(0,2,0,2),(0,2,2,0),(2,0,0,2)]
+        p = [(2, 0, 2, 0), (0, 2, 0, 2), (0, 2, 2, 0), (2, 0, 0, 2)]
         self.pad = [nn.ZeroPad2d(padding=(p[g])) for g in range(4)]
         self.cv1 = Conv(c1, c_ // 4, k[0], 1, p=0)
         self.cv2 = Conv(c_, c2, k[1], 1, g=g)
@@ -104,8 +105,13 @@ class APBottleneck(nn.Module):
 
     def forward(self, x):
         """'forward()' applies the YOLO FPN to input data."""
-        return x + self.cv2((torch.cat([self.cv1(self.pad[g](x)) for g in range(4)], 1))) if self.add else self.cv2((torch.cat([self.cv1(self.pad[g](x)) for g in range(4)], 1)))
+        return (
+            x + self.cv2(torch.cat([self.cv1(self.pad[g](x)) for g in range(4)], 1))
+            if self.add
+            else self.cv2(torch.cat([self.cv1(self.pad[g](x)) for g in range(4)], 1))
+        )
 
-globals()['PConv'] = PConv  
-globals()['APC2f'] = APC2f
-globals()['APBottleneck'] = APBottleneck
+
+globals()["PConv"] = PConv
+globals()["APC2f"] = APC2f
+globals()["APBottleneck"] = APBottleneck
