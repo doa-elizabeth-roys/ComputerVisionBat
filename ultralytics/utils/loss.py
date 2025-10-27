@@ -13,26 +13,27 @@ from ultralytics.utils.ops import crop_mask, xywh2xyxy, xyxy2xywh
 from ultralytics.utils.tal import RotatedTaskAlignedAssigner, TaskAlignedAssigner, dist2bbox, dist2rbox, make_anchors
 from ultralytics.utils.torch_utils import autocast
 
-
 from .metrics import bbox_iou, probiou
 from .tal import bbox2dist
 
 
 class AdaptiveThresholdFocalLoss(nn.Module):
-    """Wraps focal loss around existing loss_fcn(), i.e. criteria = FocalLoss(nn.BCEWithLogitsLoss(), gamma=1.5)"""
+    """Wraps focal loss around existing loss_fcn(), i.e. criteria = FocalLoss(nn.BCEWithLogitsLoss(), gamma=1.5)."""
+
     def __init__(self, loss_fcn, gamma=1.5, alpha=0.25):
-        super(AdaptiveThresholdFocalLoss, self).__init__()
+        super().__init__()
         self.loss_fcn = loss_fcn  # must be nn.BCEWithLogitsLoss()
         self.gamma = gamma
         self.alpha = alpha
         self.reduction = loss_fcn.reduction
-        self.loss_fcn.reduction = 'none'  # required to apply FL to each element
+        self.loss_fcn.reduction = "none"  # required to apply FL to each element
         self.p_t_old = None
         print("Using ATFL loss!")
+
     def forward(self, pred, true):
         loss = self.loss_fcn(pred, true)
         pred_prob = torch.sigmoid(pred)
-        p_t = true * pred_prob + (1 - true) * (1 - pred_prob)   #得出预测概率
+        p_t = true * pred_prob + (1 - true) * (1 - pred_prob)  # 得出预测概率
         # p_t = torch.Tensor(p_t)                                 #将张量转化为pytorch张量，使其在pytorch中可以进行张量运算
 
         # mean_pt = p_t.mean()
@@ -64,7 +65,7 @@ class AdaptiveThresholdFocalLoss(nn.Module):
         # # Modulation factors
         # p_t_high = torch.where(p_t > 0.5, (1.0 - p_t_clamped) ** gamma, torch.zeros_like(p_t))
         # p_t_low = torch.where(p_t <= 0.5, (1.5 - p_t_clamped) ** (-torch.log(p_t_clamped)), torch.zeros_like(p_t))
-        
+
         # if torch.rand(1).item() < 0.01:  # 1% chance to print
         #     print(f"[ATFL] mean_pt: {mean_pt.item():.4f}, gamma: {gamma.item():.4f}")
 
@@ -78,7 +79,7 @@ class AdaptiveThresholdFocalLoss(nn.Module):
         #     return loss
 
         # Clamp p_t to avoid log(0), division by zero, or inf
-        p_t_clamped = torch.clamp(p_t, min=1e-4, max=1. - 1e-4)
+        p_t_clamped = torch.clamp(p_t, min=1e-4, max=1.0 - 1e-4)
 
         # Compute moving average of p_t to estimate difficulty
         mean_pt = p_t_clamped.mean().detach()
@@ -104,17 +105,20 @@ class AdaptiveThresholdFocalLoss(nn.Module):
         # Apply modulation
         loss = loss * modulating_factor
 
-        #  debug 
+        #  debug
         if torch.rand(1).item() < 0.01:
-            print(f"[ATFL Debug] mean_p_t: {mean_pt.item():.4f}, gamma: {gamma.item():.4f}, loss_mean: {loss.mean().item():.4f}")
+            print(
+                f"[ATFL Debug] mean_p_t: {mean_pt.item():.4f}, gamma: {gamma.item():.4f}, loss_mean: {loss.mean().item():.4f}"
+            )
 
         # Reduction
-        if self.reduction == 'mean':
+        if self.reduction == "mean":
             return loss.mean()
-        elif self.reduction == 'sum':
+        elif self.reduction == "sum":
             return loss.sum()
         else:
             return loss
+
 
 class VarifocalLoss(nn.Module):
     """

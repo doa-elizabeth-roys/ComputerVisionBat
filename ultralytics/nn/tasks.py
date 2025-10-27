@@ -27,6 +27,8 @@ from ultralytics.nn.modules import (
     A2C2f,
     AConv,
     ADown,
+    APBottleneck,
+    APC2f,
     Bottleneck,
     BottleneckCSP,
     C2f,
@@ -54,6 +56,7 @@ from ultralytics.nn.modules import (
     ImagePoolingAttn,
     Index,
     LRPCHead,
+    PConv,
     Pose,
     RepC3,
     RepConv,
@@ -68,10 +71,6 @@ from ultralytics.nn.modules import (
     YOLOEDetect,
     YOLOESegment,
     v10Detect,
-    APC2f, 
-    APBottleneck, 
-    PConv, 
-
 )
 from ultralytics.nn.modules.APConv import PConv
 from ultralytics.utils import DEFAULT_CFG_DICT, LOGGER, YAML, colorstr, emojis
@@ -83,8 +82,8 @@ from ultralytics.utils.loss import (
     v8OBBLoss,
     v8PoseLoss,
     v8SegmentationLoss,
-    AdaptiveThresholdFocalLoss,
 )
+
 # from ultralytics.utils.SDloss import (
 #     BboxLoss,
 #     SLSIoULoss,
@@ -511,7 +510,7 @@ class DetectionModel(BaseModel):
         return E2EDetectLoss(self) if getattr(self, "end2end", False) else v8DetectionLoss(self)
 
     # def init_criterion(self):
-    #     reg_max = 16  
+    #     reg_max = 16
     #     use_dfl = True
     #     return BboxLoss(reg_max=reg_max, use_dfl=use_dfl)
 
@@ -1562,7 +1561,7 @@ def parse_model(d, ch, verbose=True):
     scale = d.get("scale")
     if scales:
         if not scale:
-            scale = tuple(scales.keys())[0]
+            scale = next(iter(scales.keys()))
             LOGGER.warning(f"no model scale passed. Assuming scale='{scale}'.")
         depth, width, max_channels = scales[scale]
 
@@ -1611,9 +1610,9 @@ def parse_model(d, ch, verbose=True):
             SCDown,
             C2fCIB,
             A2C2f,
-            PConv, 
-            APC2f, 
-            APBottleneck
+            PConv,
+            APC2f,
+            APBottleneck,
         }
     )
     repeat_modules = frozenset(  # modules with 'repeat' arguments
@@ -1633,7 +1632,6 @@ def parse_model(d, ch, verbose=True):
             C2fCIB,
             C2PSA,
             A2C2f,
-            
         }
     )
     for i, (f, n, m, args) in enumerate(d["backbone"] + d["head"]):  # from, number, module, args
@@ -1643,7 +1641,7 @@ def parse_model(d, ch, verbose=True):
             else getattr(__import__("torchvision").ops, m[16:])
             if "torchvision.ops." in m
             else globals()[m]
-        ) 
+        )
         for j, a in enumerate(args):
             if isinstance(a, str):
                 with contextlib.suppress(ValueError):
@@ -1713,7 +1711,7 @@ def parse_model(d, ch, verbose=True):
         m_.np = sum(x.numel() for x in m_.parameters())  # number params
         m_.i, m_.f, m_.type = i, f, t  # attach index, 'from' index, type
         if verbose:
-            LOGGER.info(f"{i:>3}{str(f):>20}{n_:>3}{m_.np:10.0f}  {t:<45}{str(args):<30}")  # print
+            LOGGER.info(f"{i:>3}{f!s:>20}{n_:>3}{m_.np:10.0f}  {t:<45}{args!s:<30}")  # print
         save.extend(x % i for x in ([f] if isinstance(f, int) else f) if x != -1)  # append to savelist
         layers.append(m_)
         if i == 0:
@@ -1757,7 +1755,7 @@ def guess_model_scale(model_path):
         (str): The size character of the model's scale (n, s, m, l, or x).
     """
     try:
-        return re.search(r"yolo(e-)?[v]?\d+([nslmx])", Path(model_path).stem).group(2)  # noqa
+        return re.search(r"yolo(e-)?[v]?\d+([nslmx])", Path(model_path).stem).group(2)
     except AttributeError:
         return ""
 
